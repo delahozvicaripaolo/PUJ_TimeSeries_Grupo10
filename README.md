@@ -1,3 +1,4 @@
+<<<<<<< HEAD
 Welcome! 
 
 This is a minimal example of a book based on R Markdown and **bookdown** (https://github.com/rstudio/bookdown). 
@@ -11,3 +12,7 @@ Additional resources:
 The **bookdown** book: https://bookdown.org/yihui/bookdown/
 
 The **bookdown** package reference site: https://pkgs.rstudio.com/bookdown
+=======
+# ProyectoTimeSeriesGrupo10DataSciencePUJ
+Repositorio para los desarrollos de la asignaturas series de tiempo en  la maestría de ciencia de datos PUJ.
+>>>>>>> b32ecca10f3fb663bdc07c1a7ebb6a745eb1d453
