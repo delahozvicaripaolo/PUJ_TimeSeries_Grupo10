@@ -1,0 +1,361 @@
+--- 
+title: "Faros del Mercado: Índices Bursátiles que Guían la Economía Mundial."
+author: "Paolo De La Hoz Vicari, Genjis Ossa Gonzales"
+date: "`r Sys.Date()`"
+site: bookdown::bookdown_site
+documentclass: book
+bibliography: [book.bib]
+description: Serie de tiempo
+link-citations: yes
+github-repo: null
+output:
+  bookdown::gitbook:
+    code_folding: hide
+---
+# Descripción del proceso y justificación del análisis de los valores bursátiles en los principales mercados globales: Estados Unidos, Europa y Asia.
+
+## Descripción del proyecto.
+El proyecto se centrará en tres regiones clave: Estados Unidos (S&P 500, NASDAQ, Dow Jones), Europa (DAX, CAC 40, FTSE 100) y Asia (Nikkei 225, Hang Seng, Shanghai Composite). Para cada índice, se recopilará información histórica diaria sobre precios de cierre, volumen y variación porcentual.
+
+Posteriormente, se realizará una limpieza y estructuración de los datos, seguida de un análisis exploratorio para identificar patrones, estacionalidades y correlaciones. A partir de esto, se aplicarán modelos de pronóstico como ARIMA, Prophet o técnicas de aprendizaje automático para estimar las tendencias futuras. El objetivo es generar una herramienta que permita anticipar cambios significativos y pronosticar valores en los mercados para la toma de decisiones.
+
+## Justificación e importancia  del análisis.
+
+En el actual entorno económico, caracterizado por una creciente interconexión y volatilidad, el análisis y pronóstico de los valores de acciones en los principales mercados financieros es esencial para comprender las dinámicas económicas internacionales, anticipar crisis, identificar oportunidades de inversión y formular políticas económicas informadas.El análisis de los valores bursátiles en los principales mercados financieros (Estados Unidos, Europa y Asia) es fundamental para la toma de decisiones estratégicas en contextos económicos globalizados. Estos mercados, representan los polos financieros más influyentes del mundo, cuyas dinámicas afectan directa e indirectamente a las economías emergentes, al comercio internacional y a la inversión institucional y minorista.
+
+El análisis y pronóstico de estos valores permite anticipar tendencias, gestionar riesgos, optimizar carteras de inversión, comprender la interacción entre factores macroeconómicos (PIB, inflación, tasas de interés), eventos exógenos (guerras, pandemias, desastres naturales) y dinámicas propias de cada región (regulaciones, política monetaria, innovación tecnológica). Siendo una herramienta esencial tanto para inversores individuales como para instituciones financieras globales. Además, brinda información clave sobre la salud económica y la proyección futura de regiones que representan más del 75% del PIB mundial. Esta información no solo es clave para inversionistas, sino también para instituciones públicas y privadas que buscan estabilidad financiera, planificación a largo plazo y toma de decisiones estratégicas.
+
+En el caso de Estados Unidos, el mercado bursátil (representado por índices como el S&P 500, NASDAQ y Dow Jones) es considerado un barómetro global de confianza económica y tecnológica. Su influencia es tal que las decisiones de la Reserva Federal o los resultados trimestrales de empresas como Apple o Microsoft pueden generar reacciones en cadena en los demás continentes.
+
+Europa, a través de bolsas como la de Frankfurt (DAX), París (CAC 40) o Londres (FTSE 100), representa un mercado con alta diversificación industrial, energética y financiera. Su relevancia radica en ser un punto de referencia para políticas regulatorias, estabilidad monetaria (especialmente en la zona euro) y tensiones geopolíticas que afectan la confianza de los inversionistas.
+
+Finalmente, Asia, con focos principales en Japón (Nikkei 225), China (Shanghai Composite) y Hong Kong (Hang Seng), constituye el eje de crecimiento económico más dinámico. China en particular, como segunda economía mundial, tiene un impacto decisivo en cadenas de suministro, comercio exterior y mercados emergentes.
+<center>
+
+![Principales Mercados Bursatiles](Indices_Bursatil.JPG)
+</center>
+# Referencias
+
+* Bloomberg Markets: https://www.bloomberg.com/markets
+
+* Yahoo Finance: https://finance.yahoo.com
+
+* World Bank Data: https://data.worldbank.org
+
+* Financial Times – Markets: https://www.ft.com/markets
+
+# Desarrollo
+## Preprocesamiento de datos.
+### Cargar las librerías necesarias
+```{r setup, message=FALSE, warning=FALSE}
+library(quantmod)   # Para descargar datos financieros
+library(dplyr)      # Para manipular datos
+library(zoo)        # Para series de tiempo basadas en fechas
+library(ggplot2)    # Para gráficos bonitos
+library(tidyr)      # Para transformar los datos
+```
+### Definimos los índices bursátiles de interés (Yahoo Finance symbols).
+```{r, message=FALSE, warning=FALSE}
+
+indices <- c("^GSPC", "^DJI", "^IXIC", "^GDAXI", "^FCHI", "^FTSE", "^N225", "^HSI", "000001.SS")
+```
+### Descargamos los datos de Yahoo Finance desde el 2019.
+```{r, message=FALSE, warning=FALSE}
+
+lista_indices <- lapply(indices, function(ticker) {
+  getSymbols(ticker, src = "yahoo", from = "2019-01-01", auto.assign = FALSE)
+})
+```
+### Asignamos nombres a cada índice.
+```{r, message=FALSE, warning=FALSE}
+
+
+nombres_indices <- c("SP500", "DowJones", "Nasdaq", "DAX", "CAC40", "FTSE100", "Nikkei225", "HangSeng", "ShanghaiComposite")
+names(lista_indices) <- nombres_indices
+```
+### Extraemos solo los precios de cierre y convertimos cada serie en un objeto zoo.
+```{r, message=FALSE, warning=FALSE}
+
+cierres_zoo <- lapply(lista_indices, function(serie) {
+  zoo(Cl(serie))  # Cl() extrae el 'Close' y zoo() lo convierte a objeto de series de tiempo
+})
+```
+
+### Unimos todas las series zoo en un solo objeto.
+```{r, message=FALSE, warning=FALSE}
+cierres_merged <- do.call(merge, cierres_zoo)
+```
+### Visualizamos la estructura.
+```{r, message=FALSE, warning=FALSE}
+
+head(cierres_merged)
+```
+## Gráfico de evolución histórica de todos los índices.
+### Convertir a un data frame para ggplot y reestructuración en formato largo para gráficos.
+```{r, message=FALSE, warning=FALSE}
+cierres_df <- data.frame(Date = index(cierres_merged), coredata(cierres_merged))
+
+cierres_long <- cierres_df %>%
+  pivot_longer(cols = -Date, names_to = "Indice", values_to = "Cierre")
+```
+### Gráfico.
+
+El gráfico muestra la evolución diaria de los precios de cierre de los principales índices bursátiles a nivel mundial desde 2019 hasta la fecha actual. Cada línea representa un índice diferente, con escalas independientes de precio en el eje Y y fechas en el eje X.
+
+Eje X: Fecha (de 2019 a 2025).
+
+Eje Y: Precio de cierre (escala real de cada índice).
+
+Variables representadas: SP500, Dow Jones, Nasdaq, DAX, CAC40, FTSE100, Nikkei225, Hang Seng, Shanghai Composite.
+```{r, message=FALSE, warning=FALSE}
+ggplot(cierres_long, aes(x = Date, y = Cierre, color = Indice)) +
+  geom_line() +
+  labs(
+    title = "Evolución histórica de índices bursátiles (2019-Actualidad)",
+    x = "Fecha",
+    y = "Precio de Cierre",
+    color = "Índice"
+  ) +
+  theme_minimal()
+```
+
+## Promedios Móviles
+
+### Aplicamos promedio móvil (7, 30, 90 días) para cada índice.
+```{r, message=FALSE, warning=FALSE}
+promedios_moviles <- lapply(cierres_zoo, function(serie) {
+  data.frame(
+    Fecha = index(serie),
+    Original = as.numeric(serie),
+    MA_7 = as.numeric(rollmean(serie, k = 7, fill = NA, align = "right")),
+    MA_30 = as.numeric(rollmean(serie, k = 30, fill = NA, align = "right")),
+    MA_90 = as.numeric(rollmean(serie, k = 90, fill = NA, align = "right"))
+  )
+})
+```
+
+### Asignamos los nombres de los indices
+```{r, message=FALSE, warning=FALSE}
+names(promedios_moviles) <- nombres_indices
+```
+
+### Graficamos los promedios móviles en todos los indices con (7, 30, 90 días)
+
+**SP500:** Crecimiento fuerte post-pandemia, promedios móviles confirman tendencia alcista estructural, recuperación rápida tras caídas.
+
+**Dow Jones:** Crecimiento sostenido, mayor sensibilidad a choques globales, MA_90 actúa como soporte de tendencia.
+
+**Nasdaq:** Expansión explosiva durante 2020-2022, correcciones posteriores, fuerte volatilidad de corto plazo.
+
+**DAX:** Recuperación sólida, crecimiento más moderado que SP500, volatilidad controlada en 2023-2024.
+
+**CAC40:** Crecimiento progresivo, recuperación fuerte post-pandemia, estabilidad pese a contexto europeo incierto.
+
+**FTSE100:** Recuperación más lenta, crecimiento más estable pero menos acelerado, reflejando impacto de Brexit y COVID-19.
+
+**Nikkei225:** Crecimiento firme y constante, volatilidad moderada, estabilidad asiática frente a shocks externos.
+
+**HangSeng:** Tendencia decreciente persistente, afectado por tensiones políticas y regulación, no logra recuperación estructural.
+
+**Shanghai Composite:** Oscilaciones cíclicas sin tendencia fuerte, movimientos suaves ligados a política económica interna.
+
+```{r, message=FALSE, warning=FALSE}
+graficar_promedios_moviles <- function(df, nombre_indice) {
+  df_long <- df %>%
+    pivot_longer(cols = c("Original", "MA_7", "MA_30", "MA_90"), 
+                 names_to = "Serie", values_to = "Valor")
+  
+  ggplot(df_long, aes(x = Fecha, y = Valor, color = Serie)) +
+    geom_line() +
+    labs(
+      title = paste(nombre_indice, "- Evolución y Promedios Móviles (7, 30, 90 días)"),
+      x = "Fecha",
+      y = "Precio",
+      color = "Serie"
+    ) +
+    theme_minimal()
+}
+
+for (indice in nombres_indices) {
+  print(graficar_promedios_moviles(promedios_moviles[[indice]], indice))
+}
+```
+
+## AutoCorrelación ACF
+### Graficamos la autocorrelación (ACF) en todos los indices.
+**SP500:**	Presenta autocorrelaciones extremadamente altas en todos los lags. Indica muy alta dependencia temporal, el precio de hoy está casi totalmente explicado por el precio de ayer, anteayer, etc.
+
+**DowJones:**	Patrón idéntico al SP500, autocorrelaciones cercanas a 1 hasta el lag 30. Confirma fuerte persistencia y memoria de largo plazo en el comportamiento de precios.
+
+**Nasdaq:**	Igual que SP500 y DowJones, persistencia total en los precios diarios. Movimiento fuertemente dependiente de valores anteriores. Alta estabilidad interna.
+
+**DAX:**	Alta autocorrelación, pero comienza a decrecer muy lentamente conforme aumenta el lag. Muestra persistencia, aunque ligeramente menos rígida que en índices estadounidenses.
+
+**CAC40:**	Comportamiento muy similar al DAX con alta autocorrelación inicial, pero con una leve pendiente descendente a partir del lag 10. Indica ligero debilitamiento de la dependencia en el tiempo.
+
+**FTSE100:**	Alta autocorrelación, pero con una pendiente descendente más pronunciada que en DAX o CAC40. La dependencia de precios pasados existe pero se va diluyendo más rápido.
+
+**Nikkei225:**	Persistencia fuerte (autocorrelaciones cercanas a 1), aunque ligeramente más "sueltas" que en los mercados occidentales. Los precios tienden a ser explicados por valores pasados, pero hay algo más de ruido.
+
+**HangSeng:**	Alta autocorrelación inicial, pero decayendo progresivamente con el lag. Refleja una memoria de precios, aunque menos estable y más volátil que SP500 o DowJones.
+
+**Shanghai Composite:**	Es el único donde la autocorrelación desciende de forma continua y más marcada a medida que crece el lag. Esto indica que la memoria de los precios se erosiona rápidamente en China. Mayor aleatoriedad y menor persistencia estructural en los precios.
+
+```{r, message=FALSE, warning=FALSE}
+
+graficar_acf <- function(serie, nombre_indice) {
+  serie_sin_na <- na.omit(serie)  # 1. Eliminar los valores faltantes (NA)
+  acf(coredata(serie_sin_na),     # 2. Calcula autocorrelaciones
+      lag.max = 30,               # 3. Mide autocorrelaciones hasta 30 rezagos (lags)
+      main = paste("Autocorrelación (ACF) -", nombre_indice))  # 4. Título del gráfico
+}
+
+# Aplicar la función a todos los índices
+for (indice in nombres_indices) {
+  graficar_acf(cierres_zoo[[indice]], indice)
+}
+```
+
+## Descomposición de serie de tiempo.
+### Descomponemos y graficamos los indices bursatiles utilizando la forma clasica y STL con pasos de limpieza e implementación.
+```{r, message=FALSE, warning=FALSE}
+descomponer_y_graficar <- function(serie_zoo, nombre_indice) {
+  
+  # Eliminamos NA
+  serie_limpia <- na.omit(serie_zoo)
+  
+  # Convertimos a vector numérico puro
+  valores_numericos <- as.numeric(serie_limpia)
+  
+  # Convertimos a objeto ts
+  serie_ts <- ts(valores_numericos,
+                 start = c(2019, 1),
+                 frequency = 252)
+  
+  # Graficamos descomposición clásica
+  plot(decompose(serie_ts))
+  mtext(paste("Descomposición Clásica -", nombre_indice), side = 3, line = 1, cex = 1.5)
+  
+  # Graficamos descomposición STL
+  plot(stl(serie_ts, s.window = "periodic"))
+  mtext(paste("Descomposición STL -", nombre_indice), side = 3, line = 1, cex = 1.5)
+}
+# Aplicamos la función a todos los índices
+for (indice in nombres_indices) {
+  descomponer_y_graficar(cierres_zoo[[indice]], indice)
+}
+```
+
+## Tabla de resumen con tendencia, estacionalidad y ruido; para todos los indices.
+
+```{r, message=FALSE, warning=FALSE}
+analizar_comportamiento <- function(serie_zoo) {
+  serie_limpia <- na.omit(serie_zoo)
+  valores <- as.numeric(serie_limpia)
+  ts_serie <- ts(valores, start = c(2019, 1), frequency = 252)
+  
+  # Decomposición STL
+  descomposicion <- stl(ts_serie, s.window = "periodic")
+  
+  trend <- descomposicion$time.series[, "trend"]
+  seasonal <- descomposicion$time.series[, "seasonal"]
+  remainder <- descomposicion$time.series[, "remainder"]
+  
+  # --- Tendencia ---
+  cambio_tendencia <- (tail(trend, 1) - head(trend, 1)) / mean(trend)
+  
+  if (abs(cambio_tendencia) > 0.1) {
+    tendencia_eval <- ifelse(cambio_tendencia > 0, "Creciente", "Decreciente")
+  } else {
+    tendencia_eval <- "Estable"
+  }
+  
+  # --- Estacionalidad ---
+  amplitud_estacional <- max(seasonal) - min(seasonal)
+  promedio_nivel <- mean(valores, na.rm = TRUE)
+  
+  if ((amplitud_estacional / promedio_nivel) > 0.05) {
+    estacionalidad_eval <- "Fuerte"
+  } else {
+    estacionalidad_eval <- "Débil"
+  }
+  
+  # --- Ruido ---
+  sd_ruido <- sd(remainder, na.rm = TRUE)
+  
+  if ((sd_ruido / promedio_nivel) > 0.05) {
+    ruido_eval <- "Alto"
+  } else {
+    ruido_eval <- "Moderado"
+  }
+  
+  return(c(Tendencia = tendencia_eval, Estacionalidad = estacionalidad_eval, Ruido = ruido_eval))
+}
+
+# Aplicarlo a todos los índices
+resumen_automatico <- t(sapply(cierres_zoo, analizar_comportamiento))
+
+# Convertir a data frame ordenado
+resumen_automatico_df <- data.frame(
+  Indice = nombres_indices,
+  Tendencia = resumen_automatico[, "Tendencia"],
+  Estacionalidad = resumen_automatico[, "Estacionalidad"],
+  Ruido = resumen_automatico[, "Ruido"]
+)
+
+# 4. Edición de tabla
+knitr::kable(resumen_automatico_df, caption = "Resumen automático de la tendencia, estacionalidad y ruido observados por índice (basado en descomposición STL).")
+
+```
+## Mapa de calor
+```{r, message=FALSE, warning=FALSE}
+# Cargar librería adicional para Heatmaps
+library(ggplot2)
+
+# 1. Usamos el resumen automático que ya creamos
+resumen_mapa <- resumen_automatico_df
+
+# 2. Codificar las variables cualitativas a valores numéricos
+resumen_mapa_numeric <- resumen_mapa %>%
+  mutate(
+    Tendencia = case_when(
+      Tendencia == "Creciente" ~ 1,
+      Tendencia == "Decreciente" ~ -1,
+      Tendencia == "Estable" ~ 0,
+      TRUE ~ NA_real_
+    ),
+    Estacionalidad = case_when(
+      Estacionalidad == "Fuerte" ~ 1,
+      Estacionalidad == "Débil" ~ 0,
+      TRUE ~ NA_real_
+    ),
+    Ruido = case_when(
+      Ruido == "Alto" ~ 1,
+      Ruido == "Moderado" ~ 0,
+      TRUE ~ NA_real_
+    )
+  )
+
+# 3. Reorganizar el dataframe en formato largo para ggplot
+resumen_long <- resumen_mapa_numeric %>%
+  pivot_longer(cols = c(Tendencia, Estacionalidad, Ruido),
+               names_to = "Caracteristica",
+               values_to = "Valor")
+
+# 4. Crear el Heatmap
+ggplot(resumen_long, aes(x = Caracteristica, y = Indice, fill = Valor)) +
+  geom_tile(color = "white") +
+  scale_fill_gradient2(
+    low = "red", mid = "white", high = "green", midpoint = 0,
+    limits = c(-1, 1),
+    name = "Nivel"
+  ) +
+  labs(
+    title = "Mapa de Calor: Tendencia, Estacionalidad y Ruido por Índice",
+    x = "Componente",
+    y = "Índice Bursátil"
+  ) +
+  theme_minimal() +
+  theme(axis.text.x = element_text(angle = 45, hjust = 1))
+
+```
